@@ -34,7 +34,7 @@ def detect_license_plate(image, original_im, color):
             class_id = np.argmax(confidence_score)
             confidence = confidence_score[class_id]
 
-            if confidence > 0.2 and class_id == 0:
+            if confidence > 0.80 and class_id == 0:
                 # Object detected
                 center_x = int(license[0] * width)
                 center_y = int(license[1] * height)
@@ -47,26 +47,30 @@ def detect_license_plate(image, original_im, color):
                 confidences.append(float(confidence))
                 class_ids.append(class_id)
 
-    indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.70, 0.90)
+    indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.90, 0.90)
 
     font = cv2.FONT_HERSHEY_PLAIN
 
     license_plate = image
     plate_only_resu = None
+    plate_confidence = []
 
     for i in range(len(boxes)):
         if i in indexes:
             x, y, w, h = boxes[i]
             label = str(classes[class_ids[i]]) + ": " + str(confidences[class_ids[i]])
-            print(label)
+            plate_confidence.append(((classes[class_ids[i]]), confidences[class_ids[i]]))
+            # print(label)
             if y >= pad and x - pad >= 0 and x + w + pad < width and y + h + pad < height:
                 license_plate = image[y-pad:y+h+pad, x-pad:x + w+pad]
 
             license_plate_resized = cv2.resize(license_plate, (license_plate.shape[1] * scale, license_plate.shape[0] * scale),
                                                interpolation=cv2.INTER_LINEAR)
             plate_only_resu = reader.readtext(license_plate_resized)
-            print("OCR Out License Plate Image: ", plate_only_resu)
+            if len(plate_only_resu) > 0:
+                plate_only_resu = plate_only_resu[0][1:]
+            # print("OCR Out License Plate Image: ", plate_only_resu)
             cv2.rectangle(original_im, (x, y), (x + w, y + h), color, 1)
             cv2.putText(original_im, label, (x, y - 5), font, 1, color, 1)
 
-    return original_im, plate_only_resu
+    return original_im, plate_confidence, plate_only_resu

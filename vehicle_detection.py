@@ -48,16 +48,23 @@ def detection(image):
 
     indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.85, 0.90)
 
-    vehicle = image
-    plate = None
+    original_img = vehicle = image
+    plate_confidence = []
+    ocr_confidence = []
+    vehicle_confidence = []
 
     for i in range(len(boxes)):
         if i in indexes:
             x, y, w, h = boxes[i]
             label = str(classes[class_ids[i]])
-            print(label)
-            vehicle = image[y+int(h/2):y+h, x:x+w]
+            # print(label)
+            # vehicle = image[y+int(h/2):y+h, x:x+w]
+            if x > 0 and y > 0 and w > 0 and h > 0:
+                vehicle = image[y:y+h, x:x+w]
             vehicle_grayed = cv2.cvtColor(vehicle, cv2.COLOR_BGR2GRAY)
-            vehicle, plate = license_plates_detection.detect_license_plate(vehicle_grayed, image, color)
+            original_img, plate_confidence, ocr = license_plates_detection.detect_license_plate(vehicle_grayed, image, color)
+            vehicle_confidence.append((label, confidences[i]))
+            if ocr is not None:
+                ocr_confidence.append(ocr)
 
-    return vehicle, plate
+    return original_img, vehicle_confidence, ocr_confidence, plate_confidence
