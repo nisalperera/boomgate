@@ -4,7 +4,7 @@ import easyocr
 
 reader = easyocr.Reader(['en'])
 
-with open("./data_utils/classes/license_plate.names", "r") as f:
+with open("../data_utils/classes/license_plate.names", "r") as f:
     classes = [line.strip() for line in f.readlines()]
 
 license_plate_net = cv2.dnn.readNet("./data_utils/weight_files/yolov4-tiny-detector-1ch_final.weights",

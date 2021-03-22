@@ -1,5 +1,5 @@
 import cv2
-from vehicle_detection import detection
+from detections.vehicle_detection import detection
 import time
 
 

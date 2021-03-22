@@ -1,5 +1,5 @@
 from database.model import VehicleDetails
-from read_video import read_video
+from detections.read_video import read_video
 
 vehicleDetails = VehicleDetails()
 
