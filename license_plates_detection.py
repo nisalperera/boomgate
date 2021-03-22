@@ -4,10 +4,11 @@ import easyocr
 
 reader = easyocr.Reader(['en'])
 
-with open("license_plate.names", "r") as f:
+with open("./data_utils/classes/license_plate.names", "r") as f:
     classes = [line.strip() for line in f.readlines()]
 
-license_plate_net = cv2.dnn.readNet("./yolov4-tiny-detector-1ch_final.weights", "./yolov4-tiny-detector-1ch.cfg")
+license_plate_net = cv2.dnn.readNet("./data_utils/weight_files/yolov4-tiny-detector-1ch_final.weights",
+                                    "./data_utils/cfg_files/yolov4-tiny-detector-1ch.cfg")
 
 license_layer_names = license_plate_net.getLayerNames()
 license_output_layers = [license_layer_names[i[0] - 1] for i in license_plate_net.getUnconnectedOutLayers()]

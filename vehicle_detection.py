@@ -4,11 +4,11 @@ import cv2
 import license_plates_detection
 
 
-vehicle_net = cv2.dnn.readNet("yolov4.weights","yolov4.cfg")
+vehicle_net = cv2.dnn.readNet("./data_utils/weight_files/yolov4.weights","./data_utils/cfg_files/yolov4.cfg")
 
 classes = []
 
-with open("coco.names","r") as f:
+with open("./data_utils/classes/coco.names", "r") as f:
     classes = [line.strip() for line in f.readlines()]
 
 vehicle_layer_names = vehicle_net.getLayerNames()
