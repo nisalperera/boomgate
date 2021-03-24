@@ -7,13 +7,33 @@ vehicle_net = cv2.dnn.readNet("./data_utils/weight_files/yolov4.weights","./data
 
 classes = []
 
-with open("../data_utils/classes/coco.names", "r") as f:
+with open("./data_utils/classes/coco.names", "r") as f:
     classes = [line.strip() for line in f.readlines()]
 
 vehicle_layer_names = vehicle_net.getLayerNames()
 vehicle_output_layers = [vehicle_layer_names[i[0] - 1] for i in vehicle_net.getUnconnectedOutLayers()]
-
+allowed_classes = ["car", "bus", "truck", "three_wheel"]
 color = (0, 0, 255)
+font = cv2.FONT_HERSHEY_PLAIN
+
+bbox_list = []
+threshold_line = 200
+
+
+def moving_side(new, bbox):
+    if new:
+        bbox_list.clear()
+        return ""
+    elif len(bbox_list) == 0:
+        bbox_list.append(bbox)
+        return ""
+    else:
+        prev_bbox = bbox_list[-1]
+        if prev_bbox[1] > bbox[1] and prev_bbox[1]:
+            return "incoming"
+        elif prev_bbox[0] < bbox[0]:
+            return "outgoing"
+        bbox_list.append(bbox)
 
 
 def detection(image):
@@ -53,17 +73,25 @@ def detection(image):
     vehicle_confidence = []
 
     for i in range(len(boxes)):
-        if i in indexes:
-            x, y, w, h = boxes[i]
-            label = str(classes[class_ids[i]])
-            # print(label)
-            # vehicle = image[y+int(h/2):y+h, x:x+w]
-            if x > 0 and y > 0 and w > 0 and h > 0:
-                vehicle = image[y:y+h, x:x+w]
-            vehicle_grayed = cv2.cvtColor(vehicle, cv2.COLOR_BGR2GRAY)
-            original_img, plate_confidence, ocr = license_plates_detection.detect_license_plate(vehicle_grayed, image, color)
-            vehicle_confidence.append((label, confidences[i]))
-            if ocr is not None:
-                ocr_confidence.append(ocr)
+        if i in indexes and str(classes[class_ids[i]]) in allowed_classes:
+            x1, y1, w1, h1 = boxes[i]
+            if y1 + int(h1/2) < threshold_line:
+                label = str(classes[class_ids[i]])
+                # print(label)
+                # vehicle = image[y+int(h/2):y+h, x:x+w]
+                if x1 > 0 and y1 > 0 and w1 > 0 and h1 > 0:
+                    vehicle = image[y1:y1+h1, x1:x1+w1]
+                vehicle_grayed = cv2.cvtColor(vehicle, cv2.COLOR_BGR2GRAY)
+                original_img, plate_confidence, ocr = license_plates_detection.detect_license_plate(vehicle_grayed, image, boxes[i])
+                side = moving_side(False, boxes[i][:2])
+                vehicle_confidence.append((label, confidences[i], side))
+                if ocr is not None:
+                    ocr_confidence.append(ocr)
+                cv2.rectangle(original_img, (x1, y1), (x1 + w1, y1 + h1), color, 1)
+                cv2.line(original_img, (0, threshold_line), (width, threshold_line), (255, 0, 0), 1)
+                cv2.putText(original_img, label, (x1, y1 - 5), font, 1, color, 1)
+                # print("Vehicle Y coodinate: ", y1 + (h1/2))
+            else:
+                pass
 
     return original_img, vehicle_confidence, ocr_confidence, plate_confidence

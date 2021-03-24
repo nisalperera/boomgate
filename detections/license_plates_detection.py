@@ -4,7 +4,7 @@ import easyocr
 
 reader = easyocr.Reader(['en'])
 
-with open("../data_utils/classes/license_plate.names", "r") as f:
+with open("./data_utils/classes/license_plate.names", "r") as f:
     classes = [line.strip() for line in f.readlines()]
 
 license_plate_net = cv2.dnn.readNet("./data_utils/weight_files/yolov4-tiny-detector-1ch_final.weights",
@@ -15,9 +15,24 @@ license_output_layers = [license_layer_names[i[0] - 1] for i in license_plate_ne
 
 pad = 50
 scale = 1
+color = (0, 255, 0)
+font = cv2.FONT_HERSHEY_PLAIN
 
 
-def detect_license_plate(image, original_im, color):
+def ocr_with_max_conf(ocr_list):
+    if len(ocr_list) > 0:
+        max_conf = 0
+        max_con_index = 0
+        for index, ocr in enumerate(ocr_list):
+            if ocr[2] > max_conf:
+                max_conf = ocr[2]
+                max_con_index = index
+        return ocr_list[max_con_index][1:]
+    else:
+        return []
+
+
+def detect_license_plate(image, original_im, vehicle_bbox):
     height, width = image.shape
     # resized_license = cv2.resize(image, (416, 416), interpolation=cv2.INTER_LINEAR)
     license_blob = cv2.dnn.blobFromImage(image, 1/255, (416, 416), (0, 0), True, crop=False)
@@ -47,30 +62,33 @@ def detect_license_plate(image, original_im, color):
                 confidences.append(float(confidence))
                 class_ids.append(class_id)
 
-    indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.90, 0.90)
-
-    font = cv2.FONT_HERSHEY_PLAIN
+    indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.90, 0.95)
 
     license_plate = image
     plate_only_resu = None
     plate_confidence = []
+    best_plate = 0
+    plate_max_conf = 0
 
     for i in range(len(boxes)):
         if i in indexes:
-            x, y, w, h = boxes[i]
+            # conf = confidences[class_ids[i]]
+            # print(conf)
+            x2, y2, w2, h2 = boxes[i]
             label = str(classes[class_ids[i]]) + ": " + str(confidences[class_ids[i]])
             plate_confidence.append(((classes[class_ids[i]]), confidences[class_ids[i]]))
             # print(label)
-            if y >= pad and x - pad >= 0 and x + w + pad < width and y + h + pad < height:
-                license_plate = image[y-pad:y+h+pad, x-pad:x + w+pad]
+            if y2 >= pad and x2 - pad >= 0 and x2 + w2 + pad < width and y2 + h2 + pad < height:
+                license_plate = image[y2-pad:y2+h2+pad, x2-pad:x2 + w2+pad]
 
             license_plate_resized = cv2.resize(license_plate, (license_plate.shape[1] * scale, license_plate.shape[0] * scale),
                                                interpolation=cv2.INTER_LINEAR)
+
             plate_only_resu = reader.readtext(license_plate_resized)
-            if len(plate_only_resu) > 0:
-                plate_only_resu = plate_only_resu[0][1:]
+            plate_only_resu = ocr_with_max_conf(plate_only_resu)
             # print("OCR Out License Plate Image: ", plate_only_resu)
-            cv2.rectangle(original_im, (x, y), (x + w, y + h), color, 1)
+            x, y = x2 + vehicle_bbox[0], y2 + vehicle_bbox[1]
+            cv2.rectangle(original_im, (x, y), (x + w2, y + h2), color, 1)
             cv2.putText(original_im, label, (x, y - 5), font, 1, color, 1)
 
     return original_im, plate_confidence, plate_only_resu
