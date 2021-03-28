@@ -111,7 +111,7 @@ def read_video():
                 if stop_detection:
                     logger.info("Selecting best predictions.")
                     max_confidences, index = select_best(confidence_list)
-                    if save:
+                    if save and len(max_confidences) > 0 and len(max_confidences[0]) > 0:
                         logger.info("Max Vehicle confidence: {conf}".format(conf=max_confidences))
                         logger.info("Saving data to Database")
                         date_time = datetime.now()

@@ -38,6 +38,10 @@ def ocr_with_max_conf(ocr_list):
         return []
 
 
+def preprocess_license_plate(plate):
+    return cv2.threshold(plate, 100, 255, cv2.THRESH_BINARY_INV)[1].astype(np.uint8)
+
+
 def detect_license_plate(image, original_im, vehicle_bbox):
     height, width = image.shape
     # resized_license = cv2.resize(image, (416, 416), interpolation=cv2.INTER_LINEAR)
@@ -66,6 +70,8 @@ def detect_license_plate(image, original_im, vehicle_bbox):
             license_plate_im = image[y2-pad:y2+h2+pad, x2-pad:x2 + w2+pad]
 
         if license_plate_im is not None:
+            # cv2.imshow("Image", license_plate_im)
+            license_plate_im = preprocess_license_plate(license_plate_im)
             license_plate_resized = cv2.resize(license_plate_im, (license_plate_im.shape[1] * scale, license_plate_im.shape[0] * scale),
                                                interpolation=cv2.INTER_LINEAR)
             plate_ocr = reader.readtext(license_plate_resized)
