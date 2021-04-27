@@ -3,10 +3,11 @@ from detections.read_video import read_video, read_image
 # from detections.tracking import tracker
 
 vehicleDetails = VehicleDetails()
+image_path = "./data_utils/images/frame137.jpg"
 
 if __name__ == '__main__':
     read_video()
-    # read_image()
+    # read_image("./data_utils/images/frame137.jpg")
     # tracker()
     # connectDb = MongoDBConnection()
     # client = connectDb.connect("localhost:27017", database="boomgate")
